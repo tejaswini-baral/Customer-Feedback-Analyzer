@@ -1,0 +1,35 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python build files
+*.egg-info/
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.temp
