@@ -97,8 +97,6 @@ The sentiment model was evaluated using a separate validation set for model sele
 | Macro F1 Score | 60.34% |
 
 ### Confusion Matrix
-
-```text
 [[ 220  113  141]
  [  94  158  313]
  [  28   75 3387]]
