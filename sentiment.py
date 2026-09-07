@@ -4,7 +4,13 @@ from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix
+)
 
 
 # Download tokenizer data if needed
@@ -211,52 +217,151 @@ def train_model(df):
 
     return final_model, final_vectorizer
 
-def train_model(df):
-    """
-    Train the final sentiment model using the best
-    configuration selected during evaluation.
-
-    Best configuration:
-    TF-IDF (1,2) + Logistic Regression C=2 (unbalanced)
-    """
-
+def evaluate_model(df):
     X, y = _prepare_data(df)
 
-    # Best configuration found during model evaluation
+    # 80% train+validation, 20% test
+    X_train_valid, X_test, y_train_valid, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.20,
+        random_state=42,
+        stratify=y
+    )
+
+    # 80% train, 20% validation
+    X_train, X_valid, y_train, y_valid = train_test_split(
+        X_train_valid,
+        y_train_valid,
+        test_size=0.20,
+        random_state=42,
+        stratify=y_train_valid
+    )
+
+    # ONLY the final unbalanced model
     vectorizer = TfidfVectorizer(
         max_features=20000,
         ngram_range=(1, 2),
         min_df=1,
         sublinear_tf=True,
-        max_df=0.98,
+        max_df=0.98
     )
 
     model = LogisticRegression(
         C=2.0,
         class_weight=None,
         max_iter=3000,
-        solver="lbfgs",
+        solver="lbfgs"
     )
 
-    # Transform the complete dataset
-    X_tfidf = vectorizer.fit_transform(X)
+    # Train on training portion
+    X_train_tfidf = vectorizer.fit_transform(X_train)
+    X_valid_tfidf = vectorizer.transform(X_valid)
 
-    # Train the final model
-    model.fit(X_tfidf, y)
+    model.fit(X_train_tfidf, y_train)
 
-    # Store information for reference
-    model.best_config_name_ = (
-        "TF-IDF (1,2) + LR C=2 (unbalanced)"
+    # Validation
+    valid_predictions = model.predict(X_valid_tfidf)
+
+    validation_accuracy = accuracy_score(
+        y_valid,
+        valid_predictions
     )
 
-    print("Sentiment model trained successfully.")
-    print(
-        "Configuration: "
-        "TF-IDF (1,2) + LR C=2 (unbalanced)"
+    # Retrain same model on train + validation
+    final_vectorizer = TfidfVectorizer(
+        max_features=20000,
+        ngram_range=(1, 2),
+        min_df=1,
+        sublinear_tf=True,
+        max_df=0.98
     )
 
-    return model, vectorizer
+    final_model = LogisticRegression(
+        C=2.0,
+        class_weight=None,
+        max_iter=3000,
+        solver="lbfgs"
+    )
 
+    X_train_valid_tfidf = final_vectorizer.fit_transform(
+        X_train_valid
+    )
+
+    final_model.fit(
+        X_train_valid_tfidf,
+        y_train_valid
+    )
+
+    # Test
+    X_test_tfidf = final_vectorizer.transform(X_test)
+
+    predictions = final_model.predict(X_test_tfidf)
+
+    return {
+        "Best Configuration":
+            "TF-IDF (1,2) + LR C=2 (unbalanced)",
+
+        "Validation Accuracy":
+            validation_accuracy,
+
+        "Accuracy":
+            accuracy_score(y_test, predictions),
+
+        "Precision":
+            precision_score(
+                y_test,
+                predictions,
+                average="weighted",
+                zero_division=0
+            ),
+
+        "Recall":
+            recall_score(
+                y_test,
+                predictions,
+                average="weighted",
+                zero_division=0
+            ),
+
+        "F1 Score":
+            f1_score(
+                y_test,
+                predictions,
+                average="weighted",
+                zero_division=0
+            ),
+
+        "Macro Precision":
+            precision_score(
+                y_test,
+                predictions,
+                average="macro",
+                zero_division=0
+            ),
+
+        "Macro Recall":
+            recall_score(
+                y_test,
+                predictions,
+                average="macro",
+                zero_division=0
+            ),
+
+        "Macro F1 Score":
+            f1_score(
+                y_test,
+                predictions,
+                average="macro",
+                zero_division=0
+            ),
+
+        "Confusion Matrix":
+            confusion_matrix(
+                y_test,
+                predictions
+            )
+    }
 def predict_sentiment(text, model, vectorizer):
     """Predict sentiment, confidence and class probabilities."""
     cleaned_text = clean_text(text)
