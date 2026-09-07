@@ -51,7 +51,7 @@ def get_topic_name(words):
     words = set(word.lower() for word in words)
 
     topic_keywords = {
-        "🚚 Delivery & Shipping Issues": {
+        "🚚 Delivery & Shipping": {
             "delivery", "shipping", "ship", "package",
             "order", "arrived", "arrival", "mail"
         },
@@ -61,7 +61,7 @@ def get_topic_name(words):
             "comfortable", "durable", "well", "made"
         },
 
-        "📏 Size & Fit Issues": {
+        "📏 Size & Fit": {
             "size", "fit", "small", "large", "tight",
             "loose", "length", "true"
         },
